@@ -43,7 +43,8 @@ __all__ = ['conductor_dir', 'make_temp_dir', 'get_config', 'assert_initialized',
            'get_role_fingerprint', 'get_content_from_role',
            'get_metadata_from_role', 'get_defaults_from_role', 'text',
            'ordereddict_to_list', 'list_to_ordereddict', 'modules_to_install',
-           'roles_to_install', 'ansible_config_exists', 'create_file']
+           'roles_to_install', 'ansible_config_exists', 'create_file',
+           'get_role_build_command']
 
 conductor_dir = os.path.dirname(container.__file__)
 make_temp_dir = MakeTempDir
@@ -406,3 +407,11 @@ def create_file(file_path, contents):
                 fs.write(contents)
         except Exception:
             raise
+
+@container.conductor_only
+def get_role_build_command(role):
+    if isinstance(role, dict):
+        role_build_command = role.get('build_command')
+        if role_build_command:
+            return role_build_command
+    return 'while true; do sleep 1; done'

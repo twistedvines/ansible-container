@@ -248,7 +248,7 @@ def hostcmd_run(base_path, project_name, engine_name, vars_files=None, cache=Tru
     services = kwargs.pop('service')
     config.check_requested_services(services)
     config.set_services(services)
-    conductor_env = config.get_conductor_environment() 
+    conductor_env = config.get_conductor_environment()
     config.set_conductor_environment(conductor_env)
 
     logger.debug('hostcmd_run configuration', config=config.__dict__)
@@ -263,7 +263,7 @@ def hostcmd_run(base_path, project_name, engine_name, vars_files=None, cache=Tru
         'deployment_output_path': config.deployment_path,
         'host_user_uid': os.getuid(),
         'host_user_gid': os.getgid(),
-        'settings': config.get('settings', {}), 
+        'settings': config.get('settings', {}),
     }
     if kwargs:
         params.update(kwargs)
@@ -705,8 +705,7 @@ def _run_intermediate_build_container(engine, container_name, cur_image_id, serv
         name=container_name,
         user='root',
         working_dir='/',
-        command='sh -c "while true; do sleep 1; '
-                'done"',
+        command=kwargs['command'],
         entrypoint=[],
         privileged=True,
         volumes=dict(),
@@ -806,7 +805,10 @@ def conductorcmd_build(engine_name, project_name, services, cache=True, local_py
             for role in service['roles']:
                 cur_image_fingerprint = fingerprint_hash.hexdigest()
                 role_name = role if not isinstance(role, dict) else role.get('role')
+                logger.info('Processing role %s', role_name)
                 role_fingerprint = get_role_fingerprint(role, service_name, config_vars)
+                role_command = get_role_build_command(role)
+                logger.info('Using command %s for role %s', role_command, role_name)
                 fingerprint_hash.update(role_fingerprint)
                 logger.info('Fingerprint for this layer: %s', fingerprint_hash.hexdigest(),
                             service=service_name, role=role_name, parent_image_id=cur_image_id,
@@ -859,7 +861,7 @@ def conductorcmd_build(engine_name, project_name, services, cache=True, local_py
 
                             container_id = _run_intermediate_build_container(
                                 engine, int_container_name, cur_image_id, service_name, service,
-                                local_python=local_python
+                                local_python=local_python, command=role_command
                             )
                 else:
                     int_container_name = _intermediate_build_container_name(
@@ -870,7 +872,7 @@ def conductorcmd_build(engine_name, project_name, services, cache=True, local_py
                                 service=service_name)
                     container_id = _run_intermediate_build_container(
                         engine, int_container_name, cur_image_id, service_name, service,
-                        local_python=local_python
+                        local_python=local_python, command=role_command
                     )
 
                 artifact_breadcrumbs.append(int_container_name)
